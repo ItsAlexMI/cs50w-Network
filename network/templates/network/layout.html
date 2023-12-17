@@ -1,0 +1,222 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>{% block title %}Social Network{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="//use.fontawesome.com/releases/v5.0.7/css/all.css"
+    />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+  </head>
+  <body>
+    <nav class="bg-white shadow-lg">
+      <div class="max-w-7xl px-4">
+        <div class="flex justify-between h-16">
+          <div class="flex">
+            <a
+              href="{% url 'index' %}"
+              class="flex items-center justify-center h-16 px-4 text-xl font-bold text-gray-800"
+              >Network</a
+            >
+            <ul class="flex items-center space-x-4">
+              {% if logged_in_user %}
+              <li>
+                <div class="flex items-center">
+                  <img
+                  class="w-8 h-8 rounded-full"
+                    src="https://ui-avatars.com/api/?name={{ logged_in_user }} & background=random"
+                    alt=""
+                  />
+                  <a href="{% url 'profile' logged_in_user %}" class="text-gray-600 hover:text-gray-800 ml-1">
+                    <strong>{{ logged_in_user }}</strong></a
+                  >
+                </div>
+              </li>
+              {% endif %}
+              <li>
+                <a
+                  href="{% url 'index' %}"
+                  class="text-gray-600 hover:text-gray-800"
+                  >All Posts</a
+                >
+              </li>
+              {% if logged_in_user %}
+              <li>
+                <a href="{% url 'following' %}" class="text-gray-600 hover:text-gray-800"
+                  >Following</a
+                >
+              </li>
+              <li>
+                <a
+                  href="{% url 'logout' %}"
+                  class="text-gray-600 hover:text-gray-800"
+                  >Log Out</a
+                >
+              </li>
+              {% else %}
+              <li>
+                <a
+                  href="{% url 'login' %}"
+                  class="text-gray-600 hover:text-gray-800"
+                  >Log In</a
+                >
+              </li>
+              <li>
+                <a
+                  href="{% url 'register' %}"
+                  class="text-gray-600 hover:text-gray-800"
+                  >Register</a
+                >
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="body">{% block body %} {% endblock %}</div>
+
+    <script>
+      document
+        .getElementById("openModal")
+        .addEventListener("click", function () {
+          document.getElementById("modal").classList.remove("hidden");
+          setTimeout(function () {
+            document
+              .querySelector(".modal-content")
+              .classList.remove("translate", "opacity-0");
+          }, 50);
+        });
+
+      document
+        .getElementById("closeModal")
+        .addEventListener("click", function () {
+          document
+            .querySelector(".modal-content")
+            .classList.add("translate", "opacity-0");
+          setTimeout(function () {
+            document.getElementById("modal").classList.add("hidden");
+          }, 300);
+        });
+
+      document.querySelectorAll(".likeButton").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const postId = button.getAttribute("data-post-id");
+          const response = await fetch(`/toggle-like/${postId}/`);
+          const data = await response.json();
+
+          if (data.liked) {
+            window.location.reload();
+          } else {
+            window.location.reload();
+          }
+          const likeCount = document.querySelector(`#likeCount_${postId}`);
+          const likeResponse = await fetch(`/get-like-count/${postId}/`);
+          const likeData = await likeResponse.json();
+          likeCount.innerText = `${likeData.like_count}`;
+        });
+      });
+
+      async function loadLikes() {
+        const likeCounts = document.querySelectorAll(".likeCount");
+        likeCounts.forEach(async (likeCount) => {
+          const postId = likeCount.getAttribute("id").split("_")[1];
+          const response = await fetch(`/get-like-count/${postId}/`);
+          const data = await response.json();
+          likeCount.innerText = `${data.like_count}`;
+        });
+      }
+
+      window.addEventListener("load", loadLikes);
+    </script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const openModalButtons = document.querySelectorAll(
+          '[id^="openModalEditPost_"]'
+        );
+        const closeModalButtons = document.querySelectorAll(
+          '[id^="closeModalEditPost_"]'
+        );
+
+        openModalButtons.forEach((button) => {
+          button.addEventListener("click", function () {
+            const postId = this.id.split("_")[1];
+            const modal = document.getElementById(`modalEditPost_${postId}`);
+            modal.classList.remove("hidden");
+          });
+        });
+
+        closeModalButtons.forEach((button) => {
+          button.addEventListener("click", function () {
+            const postId = this.id.split("_")[1];
+            const modal = document.getElementById(`modalEditPost_${postId}`);
+            modal.classList.add("hidden");
+          });
+        });
+      });
+    </script>
+
+    <style>
+      .modal-content {
+        transition-property: opacity, transform;
+      }
+
+      .modal.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .modal-content.translate {
+        transform: translateY(-20px);
+      }
+      .heart-icon {
+        color: red;
+        cursor: pointer;
+      }
+    </style>
+
+<script>
+    async function loadInitialLikeCounts() {
+      const likeCountElements = document.querySelectorAll('.likeCount');
+      
+      likeCountElements.forEach(async likeCountElement => {
+        const postId = likeCountElement.getAttribute('id').split('_')[1];
+        const response = await fetch(`/get-like-count/${postId}/`);
+        const data = await response.json();
+        likeCountElement.innerText = data.like_count;
+      });
+    }
+    
+    window.addEventListener('load', loadInitialLikeCounts);
+    
+    document.querySelectorAll('.likeButton').forEach(button => {
+      button.addEventListener('click', async () => {
+        const postId = button.getAttribute('data-post-id');
+        const response = await fetch(`/toggle-like/${postId}/`);
+        const data = await response.json();
+    
+        if (data.liked) {
+          button.classList.add('fas');
+          button.classList.remove('far');
+        } else {
+          button.classList.remove('fas');
+          button.classList.add('far');
+        }
+    
+        const likeCount = document.querySelector(`#likeCount_${postId}`);
+        if (likeCount) {
+          const likeResponse = await fetch(`/get-like-count/${postId}/`);
+          const likeData = await likeResponse.json();
+          likeCount.innerText = likeData.like_count;
+        }
+      });
+    });
+    </script>
+  </body>
+</html>
